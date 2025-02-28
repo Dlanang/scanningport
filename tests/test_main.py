@@ -1,4 +1,3 @@
-# tests/test_main.py
 import pytest
 import asyncio
 import aiohttp
@@ -31,17 +30,13 @@ def test_generate_hacker_report(sample_vulnerabilities):
 
 @pytest.mark.asyncio
 async def test_subdomain_scanner_gather_subdomains(monkeypatch):
-    # Simulasikan fungsi scan_subdomain untuk mengembalikan hasil jika subdomain mengandung "active"
+    # Simulasikan fungsi scan_subdomain: hanya kembalikan hasil untuk subdomain yang dimulai dengan "active"
     async def fake_scan_subdomain(self, session, subdomain, retries=2):
-        if "active" in subdomain:
+        if subdomain.startswith("active"):
             return {"subdomain": f"http://{subdomain}.example.com", "status": 200}
         return None
 
-    monkeypatch.setattr(
-        SubdomainScanner,
-        "scan_subdomain",
-        fake_scan_subdomain
-    )
+    monkeypatch.setattr(SubdomainScanner, "scan_subdomain", fake_scan_subdomain)
 
     # Simulasikan isi wordlist sebagai string (misalnya, tiga baris)
     wordlist_content = "active1\ninactive1\nactive2\n"
@@ -49,7 +44,6 @@ async def test_subdomain_scanner_gather_subdomains(monkeypatch):
     # Override metode gather_subdomains agar menggunakan string di atas tanpa harus membaca file
     async def fake_gather_subdomains(self):
         subdomains = wordlist_content.splitlines()
-        results = []
         async with aiohttp.ClientSession() as session:
             tasks = [self.scan_subdomain(session, sub) for sub in subdomains]
             responses = await asyncio.gather(*tasks)
